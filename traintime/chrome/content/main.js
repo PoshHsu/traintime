@@ -1,20 +1,5 @@
 var browser;
 
-function selectValueFromOptions(optionCollection, targetValue) {
-  var val = targetValue.trim();
-  for (var i = 0; i < optionCollection.length; i++) {
-    if (optionCollection.item(i).textContent.trim() == val) {
-      return optionCollection.item(i);
-    }
-  }
-  return null;
-}
-
-function trainOfStationSearch(doc) {
-  var searchBtn = doc.querySelector('input#SearchButton');
-  searchBtn.click();
-}
-
 function loadURI(uri, loadCallback) {
   function contentLoadedHandler(e) {
     var target = e.originalTarget;
@@ -59,6 +44,43 @@ function trainOfStation(uri, doneCb, errorCb) {
   });
 }
 
+function parseCity(uri, doneCb, errorCb) {
+  function loadHandler(doc) {
+    var result = [];
+    var citySelector = doc.querySelector("select#FromCity");
+    var cityOptions = doc.querySelectorAll("select#FromCity > option");
+    dump ("....." + cityOptions.length + "\n");
+    for (var i = 0; i < cityOptions.length; i++) {
+      var opt = cityOptions.item(i);
+      var val = parseInt(opt.value);
+      if (val < 0) continue;
+
+      // Set FromCity to the city
+      citySelector.value = opt.value;
+      citySelector.onchange();
+
+      // Get all stations in this city
+      var stationOptions = doc.querySelectorAll("select#FromStation > option");
+      for (var j = 0; j < stationOptions.length; j++) {
+        var stationOpt = stationOptions.item(j);
+        result.push({
+          station: stationOpt.textContent.trim(),
+          code: stationOpt.value
+        });
+      }
+    }
+    doneCb(result);
+  }
+
+  // we don't use user's uri.
+  loadURI(
+    'http://twtraffic.tra.gov.tw/twrail/StationScheduleSearch.aspx?browser=ff',
+    function (doc) {
+      // Wait for script
+      window.setTimeout(loadHandler, 1000, doc);
+    });
+}
+
 window.addEventListener('load', function(e) {
   function doneCallback(result) {
     dump("result: " + JSON.stringify(result) + "\n");
@@ -88,8 +110,12 @@ var cmdLine = window.arguments[0],
     initUri,
     action;
 cmdLine = cmdLine.QueryInterface(Components.interfaces.nsICommandLine);
-initUri = cmdLine.getArgument(1);
 action = cmdLine.getArgument(0);
+try {
+  initUri = cmdLine.getArgument(1);
+} catch (e) {
+  initUri = '';
+}
 
 dump("Load init URI: " + initUri + ", action: " + action + "\n");
 
