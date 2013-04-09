@@ -1,5 +1,32 @@
 var browser;
 
+var Utils = {
+  getPaddedNumber: function(number, pad) {
+    var numStr = number.toString();
+    if (numStr.length >= pad) {
+      return numStr;
+    }
+
+    for (var i = numStr.length; i < pad; i++) {
+      numStr = "0" + numStr;
+    }
+    return numStr;
+  },
+
+  getCommandArray: function(cmdLine) {
+    var cmd = [];
+    for (var i = 0; i < cmdLine.length; i++) {
+      cmd.push(cmdLine.getArgument(i));
+    }
+    return cmd;
+  },
+
+  getNumber: function(num) {
+    if (typeof num == 'number') return num;
+    return parseInt(num.replace(/^0+/, ""));
+  }
+};
+
 function loadURI(uri, loadCallback) {
   function contentLoadedHandler(e) {
     var target = e.originalTarget;
@@ -17,7 +44,7 @@ function loadURI(uri, loadCallback) {
   browser.loadURI(uri);
 }
 
-function trainOfStation(uri, doneCb, errorCb) {
+function trainOfStationWithUri(uri, doneCb, errorCb) {
   loadURI(uri, function(doc) {
     var rows = doc.querySelectorAll("table#ResultGridView > tbody > tr"),
         result = [];
@@ -44,12 +71,33 @@ function trainOfStation(uri, doneCb, errorCb) {
   });
 }
 
-function parseCity(uri, doneCb, errorCb) {
+/**
+ * Expected option
+ * {
+ *   year: xxxx,
+ *   month: xx,
+ *   day: xx,    // Date are in number
+ *   stationCode:
+ *   direction: // 0: clockwise, 1: counter-clockwise
+ *   
+ * }
+ */
+function trainOfStation(options, doneCb, errorCb) {
+  var url = "http://twtraffic.tra.gov.tw/twrail/SearchResult.aspx?" +
+        "searchtype=1&searchdate=" + options.year + "/" +
+        Utils.getPaddedNumber(options.month, 2) + "/" +
+        Utils.getPaddedNumber(options.day, 2) +
+        "&fromstation=" + Utils.getPaddedNumber(options.stationCode, 4) +
+        "&trainclass=undefined&traindirection=" + options.direction +
+        "&fromtime=0000&totime=2359";
+  trainOfStationWithUri(url, doneCb, errorCb);
+}
+
+function cityList(doneCb, errorCb) {
   function loadHandler(doc) {
     var result = [];
     var citySelector = doc.querySelector("select#FromCity");
     var cityOptions = doc.querySelectorAll("select#FromCity > option");
-    dump ("....." + cityOptions.length + "\n");
     for (var i = 0; i < cityOptions.length; i++) {
       var opt = cityOptions.item(i);
       var val = parseInt(opt.value);
@@ -72,13 +120,32 @@ function parseCity(uri, doneCb, errorCb) {
     doneCb(result);
   }
 
-  // we don't use user's uri.
   loadURI(
     'http://twtraffic.tra.gov.tw/twrail/StationScheduleSearch.aspx?browser=ff',
     function (doc) {
-      // Wait for script
+      // Wait for script in page.
       window.setTimeout(loadHandler, 1000, doc);
     });
+}
+
+function singleTrain(uri, doneCb, errorCb) {
+  function loaded(doc) {
+    var rows = doc.querySelectorAll("#ResultGridView .Grid_Row");
+    var result = [];
+    // Skip the first line, which is title.
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows.item(i);
+      var cells = row.children;
+      result.push({
+        "station": cells.item(1).textContent.trim(),
+        "arrive": cells.item(2).textContent.trim(),
+        "leave": cells.item(3).textContent.trim()
+      });
+    }
+    doneCb(result);
+  }
+
+  loadURI(uri, loaded);
 }
 
 window.addEventListener('load', function(e) {
@@ -92,30 +159,32 @@ window.addEventListener('load', function(e) {
 
   function errorCallback() {
   }
+  var action = cmds[0];
+  cmds.shift();
 
   browser = document.getElementById('bw');
 
   switch (action) {
   case "citylist":
-    parseCity(initUri, doneCallback, errorCallback);
+    cityList(doneCallback, errorCallback);
     break;
   case "trainofstation":
   case "tos":
-    trainOfStation(initUri, doneCallback, errorCallback);
+    trainOfStation({
+      year:        Utils.getNumber(cmds[0]),
+      month:       Utils.getNumber(cmds[1]),
+      day:         Utils.getNumber(cmds[2]),
+      direction:   Utils.getNumber(cmds[3]),
+      stationCode: Utils.getNumber(cmds[4])
+    }, doneCallback, errorCallback);
+    break;
+  case "singletrain":
+  case "st":
+    singleTrain(cmds[0], doneCallback, errorCallback);
     break;
   }
 });
 
 var cmdLine = window.arguments[0],
-    initUri,
-    action;
-cmdLine = cmdLine.QueryInterface(Components.interfaces.nsICommandLine);
-action = cmdLine.getArgument(0);
-try {
-  initUri = cmdLine.getArgument(1);
-} catch (e) {
-  initUri = '';
-}
-
+    cmds = Utils.getCommandArray(cmdLine.QueryInterface(Components.interfaces.nsICommandLine));
 dump("Load init URI: " + initUri + ", action: " + action + "\n");
-
