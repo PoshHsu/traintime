@@ -27,4 +27,12 @@ Example of station list of a train
 
     ./xulrunner application.ini st <url>
 
+### As a daemon
 
+This program can stay on and connect to an application server via socket.io.
+Run with this command:
+
+    ./xulrunner application.ini daemon <server's url>
+
+* _server's url_ points to the application server. _traintime_ will work as a
+websocket client (with socket.io).

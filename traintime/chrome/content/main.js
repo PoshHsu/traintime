@@ -148,6 +148,20 @@ function singleTrain(uri, doneCb, errorCb) {
   loadURI(uri, loaded);
 }
 
+
+function startDaemon(hostUrl) {
+  dump("Connect to: " + hostUrl);
+  try {
+  var socket = io.connect(hostUrl);
+  socket.on('hello', function (data) {
+    dump('Received hello\n');
+    socket.emit('hi', { "val": "hi from traintable" });
+  });
+  } catch (e) {
+    dump("error: " + e);
+  }
+}
+
 window.addEventListener('load', function(e) {
   function doneCallback(result) {
     dump("result: " + JSON.stringify(result) + "\n");
@@ -181,6 +195,9 @@ window.addEventListener('load', function(e) {
   case "singletrain":
   case "st":
     singleTrain(cmds[0], doneCallback, errorCallback);
+    break;
+  case "daemon":
+    startDaemon(cmds[0]);
     break;
   }
 });

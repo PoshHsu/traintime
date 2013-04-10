@@ -3,6 +3,7 @@
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 
 <window id="main" title="My App" width="300" height="300" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  <script type="application/javascript" src="chrome://traintime/content/third_party/socket.io.js"/>
   <script type="application/javascript" src="chrome://traintime/content/main.js"/>
   <browser type="content" src="about:blank" id="bw" flex="1" />
 </window>
