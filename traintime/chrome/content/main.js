@@ -151,15 +151,18 @@ function singleTrain(uri, doneCb, errorCb) {
 
 function startDaemon(hostUrl) {
   dump("Connect to: " + hostUrl);
-  try {
   var socket = io.connect(hostUrl);
-  socket.on('hello', function (data) {
-    dump('Received hello\n');
-    socket.emit('hi', { "val": "hi from traintable" });
+  socket.on('get-city-list', function (data) {
+    dump("Remote ask to get city list\n");
+    cityList(function(res) {
+      socket.emit('got-city-list', {
+        id: data.id,
+        result: res
+      });
+    }, function(err) {
+      
+    });
   });
-  } catch (e) {
-    dump("error: " + e);
-  }
 }
 
 window.addEventListener('load', function(e) {
