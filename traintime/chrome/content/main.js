@@ -52,7 +52,6 @@ function trainOfStationWithUri(uri, doneCb, errorCb) {
       var row = rows[i];
       var fields = row.children;
       try {
-        dump("Result: " + fields.item(1).querySelector("a"));
         result.push({
           "type": fields.item(0).textContent.trim(),
           "code": {
@@ -156,6 +155,24 @@ function startDaemon(hostUrl) {
     dump("Remote ask to get city list\n");
     cityList(function(res) {
       socket.emit('got-city-list', {
+        id: data.id,
+        result: res
+      });
+    }, function(err) {
+      
+    });
+  });
+
+  socket.on('get-train-of-station', function (data) {
+    dump("Remote asks to get train list\n");
+    trainOfStation({
+      year: data.year,
+      month: data.month,
+      day: data.day,
+      direction: data.direction,
+      stationCode: data.stationCode
+    }, function(res) {
+      socket.emit('got-train-of-station', {
         id: data.id,
         result: res
       });
