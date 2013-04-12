@@ -1,67 +1,59 @@
 var app = require('express')(),
     server = require('http').createServer(app),
     io = require('socket.io').listen(server),
+    child_process = require('child_process'),
     connection = null;
 
 var requestQueue = {}, lastRequestId = 0, running = false;
 
-server.listen(45123, '127.0.0.1');
+exports.connect = function (doneCb, errCb) {
 
-app.get('/', function (req, res) {
-  res.sendfile(__dirname + '/index.html');
-});
+  server.listen(45123, '127.0.0.1');
 
-io.sockets.on('connection', function (socket) {
-  if (connection) {
-    // We only accept 1 connection at a time.
-    socket.disconnect();
-    return;
-  }
-
-  connection = socket;
-
-  function handleResult(data) {
-    console.log("data: " + JSON.stringify(data));
-    var cb = requestQueue[data.id];
-    if (cb) {
-      delete requestQueue[data.id];
-      if (cb.doneCb) {
-        cb.doneCb(data.result);
-      }
+  io.sockets.on('connection', function (socket) {
+    console.log("connected");
+    if (connection) {
+      // We only accept 1 connection at a time.
+      socket.disconnect();
+      return;
     }
-    running = false;
-    maybeRunNext();
-  }
 
-  socket.on('got-city-list', handleResult);
-  socket.on('got-train-of-station', handleResult);
-  socket.on('got-train', handleResult);
+    connection = socket;
 
-  socket.on('disconnect', function() {
-    requestQueue = {};
-    connection = null;
+    function handleResult(data) {
+      console.log("data: " + JSON.stringify(data));
+      var cb = requestQueue[data.id];
+      if (cb) {
+        delete requestQueue[data.id];
+        if (cb.doneCb) {
+          cb.doneCb(data.result);
+        }
+      }
+      running = false;
+      maybeRunNext();
+    }
+
+    socket.on('got-city-list', handleResult);
+    socket.on('got-train-of-station', handleResult);
+    socket.on('got-train', handleResult);
+
+    socket.on('disconnect', function() {
+      requestQueue = {};
+      connection = null;
+    });
   });
 
-  ////////////////
-  // TEST       //
-  ////////////////
-  // getCityList(function (res) {
-  //   for (var i = 0; i < res.length; i++) {
-  //     console.log(">> " + res[i].station + " " + res[i].code);
-  //   }
-  // }, null);
+  // Run the fetcher program.
+  child_process.exec(__dirname + '/../xulrunner/xulrunner ' +
+                     __dirname + '/../traintime/application.ini daemon http://localhost:45123',
+                     null,
+                     function(err) {
+                       if (err) {
+                         console.log("Fetch child error: " + err);
+                       }
+                     });
 
-  getTodayTrainOfStation(1008, 0, function (res) {
-    for (var i = 0; i < res.length; i++) {
-      var train = res[i];
-      console.log("type: " + train.type);
-      console.log("code: " + train.code.code);
-      console.log("terminal: " + train.terminal);
-      console.log("arrive: " + train.arrive);
-      console.log("leave: " + train.leave);
-    }
-  }, null);
-});
+};
 
 function pushToRequestQueue(task, data, doneCb, errCb) {
   var id = "" + (++lastRequestId);
@@ -87,15 +79,15 @@ function maybeRunNext() {
   });
 }
 
-function getCityList(doneCb, errCb) {
+exports.getCityList = function getCityList(doneCb, errCb) {
   if (!connection) {
     return;
   }
 
   pushToRequestQueue('get-city-list', {}, doneCb, errCb);
-}
+};
 
-function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
+exports.getTodayTrainOfStation = function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
   if (!connection) {
     return;
   }
@@ -111,9 +103,9 @@ function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
                      },
                      doneCb,
                      errCb);
-}
+};
 
-function getTodayTrain(trainCode, doneCb, errCb) {
+exports.getTodayTrain = function getTodayTrain(trainCode, doneCb, errCb) {
   if (!connection) {
     return;
   }
@@ -128,4 +120,4 @@ function getTodayTrain(trainCode, doneCb, errCb) {
                      },
                      doneCb,
                      errCb);
-}
+};
