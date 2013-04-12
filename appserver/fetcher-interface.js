@@ -3,7 +3,7 @@ var app = require('express')(),
     io = require('socket.io').listen(server),
     connection = null;
 
-var requestQueue = {}, lastRequestId = 0;
+var requestQueue = {}, lastRequestId = 0, running = false;
 
 server.listen(45123, '127.0.0.1');
 
@@ -21,6 +21,7 @@ io.sockets.on('connection', function (socket) {
   connection = socket;
 
   function handleResult(data) {
+    console.log("data: " + JSON.stringify(data));
     var cb = requestQueue[data.id];
     if (cb) {
       delete requestQueue[data.id];
@@ -28,6 +29,8 @@ io.sockets.on('connection', function (socket) {
         cb.doneCb(data.result);
       }
     }
+    running = false;
+    maybeRunNext();
   }
 
   socket.on('got-city-list', handleResult);
@@ -60,17 +63,36 @@ io.sockets.on('connection', function (socket) {
   }, null);
 });
 
+function pushToRequestQueue(task, data, doneCb, errCb) {
+  var id = "" + (++lastRequestId);
+  requestQueue[id] = {
+    task: task,
+    data: data,
+    doneCb: doneCb,
+    errCb: errCb
+  };
+  maybeRunNext();
+}
+
+function maybeRunNext() {
+  if (running) return;
+  if (Object.keys(requestQueue).length == 0) return;
+
+  running = true;
+  var nextId = Object.keys(requestQueue)[0];
+  var req = requestQueue[nextId];
+  connection.emit(req.task, {
+    id: nextId,
+    data: req.data
+  });
+}
+
 function getCityList(doneCb, errCb) {
   if (!connection) {
     return;
   }
 
-  var id = ++lastRequestId;
-  requestQueue[id] = {
-    doneCb: doneCb,
-    errCb: errCb
-  };
-  connection.emit('get-city-list', { id: id });
+  pushToRequestQueue('get-city-list', {}, doneCb, errCb);
 }
 
 function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
@@ -78,21 +100,17 @@ function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
     return;
   }
 
-  var id = ++lastRequestId;
-  requestQueue[id] = {
-    doneCb: doneCb,
-    errCb: errCb
-  };
-
   var date = new Date();
-  connection.emit('get-train-of-station', {
-    id: id,
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    stationCode: stationCode,
-    direction: direction
-  });
+  pushToRequestQueue('get-train-of-station',
+                     {
+                       year: date.getFullYear(),
+                       month: date.getMonth() + 1,
+                       day: date.getDate(),
+                       stationCode: stationCode,
+                       direction: direction
+                     },
+                     doneCb,
+                     errCb);
 }
 
 function getTodayTrain(trainCode, doneCb, errCb) {
@@ -100,18 +118,14 @@ function getTodayTrain(trainCode, doneCb, errCb) {
     return;
   }
 
-  var id = ++lastRequestId;
-  requestQueue[id] = {
-    doneCb: doneCb,
-    errCb: errCb
-  };
-
   var date = new Date();
-  connection.emit('get-train', {
-    id: id,
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    trainCode: trainCode
-  });
+  pushToRequestQueue('get-train',
+                     {
+                       year: date.getFullYear(),
+                       month: date.getMonth() + 1,
+                       day: date.getDate(),
+                       trainCode: trainCode
+                     },
+                     doneCb,
+                     errCb);
 }

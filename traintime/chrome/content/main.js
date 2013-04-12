@@ -167,40 +167,41 @@ function singleTrain(opt, doneCb, errorCb) {
 function startDaemon(hostUrl) {
   dump("Connect to: " + hostUrl);
 
-  function successAndSendBack(eventName, res) {
+  var socket = io.connect(hostUrl);
+
+  function successAndSendBack(eventName, id, res) {
     socket.emit(eventName, {
-      id: data.id,
+      id: id,
       result: res
     });
   }
 
   function errorCallback(err) {}
 
-  var socket = io.connect(hostUrl);
   socket.on('get-city-list', function (data) {
     dump("Remote ask to get city list\n");
-    cityList(successAndSendBack.bind(null, 'got-city-list'), errorCallback);
+    cityList(successAndSendBack.bind(null, 'got-city-list', data.id), errorCallback);
   });
 
   socket.on('get-train-of-station', function (data) {
     dump("Remote asks to get train list\n");
     trainOfStation({
-      year: data.year,
-      month: data.month,
-      day: data.day,
-      direction: data.direction,
-      stationCode: data.stationCode
-    }, successAndSendBack.bind(null, 'got-train-of-station'), errorCallback);
+      year: data.data.year,
+      month: data.data.month,
+      day: data.data.day,
+      direction: data.data.direction,
+      stationCode: data.data.stationCode
+    }, successAndSendBack.bind(null, 'got-train-of-station', data.id), errorCallback);
   });
 
   socket.on('get-train', function (data) {
     dump("Remote asks to get a train\n");
     singleTrain({
-      year: data.year,
-      month: data.month,
-      day: data.day,
-      trainCode: data.trainCode
-    }, successAndSendBack.bind(null, 'got-train'), errorCallback);
+      year: data.data.year,
+      month: data.data.month,
+      day: data.data.day,
+      trainCode: data.data.trainCode
+    }, successAndSendBack.bind(null, 'got-train', data.id), errorCallback);
   });
 }
 
@@ -251,4 +252,4 @@ window.addEventListener('load', function(e) {
 
 var cmdLine = window.arguments[0],
     cmds = Utils.getCommandArray(cmdLine.QueryInterface(Components.interfaces.nsICommandLine));
-dump("Load init URI: " + initUri + ", action: " + action + "\n");
+
