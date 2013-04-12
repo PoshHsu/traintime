@@ -6,18 +6,30 @@ fetcher.connect();
 web.start([
   {
     "method": "get",
-    "path": "/trainAt/1008/0",
+    "path": "/trainAt/:stationId/:direction",
     "handler": function(req, resp) {
-      fetcher.getTodayTrainOfStation(1008, 0, function(result) {
+      fetcher.getTodayTrainOfStation(parseInt(req.params.stationId),
+                                     parseInt(req.params.direction),
+                                     function(result) {
         resp.end(JSON.stringify(result));
       }, function() { });
     }
   },
   {
     "method": "get",
-    "path": "/trainAt/1008/1",
+    "path": "/train/:trainId",
     "handler": function(req, resp) {
-      fetcher.getTodayTrainOfStation(1008, 1, function(result) {
+      fetcher.getTodayTrain(parseInt(req.params.trainId),
+                            function(result) {
+        resp.end(JSON.stringify(result));
+      }, function() { });
+    }
+  },
+  {
+    "method": "get",
+    "path": "/stations",
+    "handler": function(req, resp) {
+      fetcher.getCityList(function(result) {
         resp.end(JSON.stringify(result));
       }, function() { });
     }
