@@ -32,6 +32,7 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('got-city-list', handleResult);
   socket.on('got-train-of-station', handleResult);
+  socket.on('got-train', handleResult);
 
   socket.on('disconnect', function() {
     requestQueue = {};
@@ -91,5 +92,26 @@ function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
     day: date.getDate(),
     stationCode: stationCode,
     direction: direction
+  });
+}
+
+function getTodayTrain(trainCode, doneCb, errCb) {
+  if (!connection) {
+    return;
+  }
+
+  var id = ++lastRequestId;
+  requestQueue[id] = {
+    doneCb: doneCb,
+    errCb: errCb
+  };
+
+  var date = new Date();
+  connection.emit('get-train', {
+    id: id,
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    trainCode: trainCode
   });
 }

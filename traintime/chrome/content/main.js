@@ -127,7 +127,7 @@ function cityList(doneCb, errorCb) {
     });
 }
 
-function singleTrain(uri, doneCb, errorCb) {
+function singleTrainWithUrl(uri, doneCb, errorCb) {
   function loaded(doc) {
     var rows = doc.querySelectorAll("#ResultGridView .Grid_Row");
     var result = [];
@@ -147,20 +147,39 @@ function singleTrain(uri, doneCb, errorCb) {
   loadURI(uri, loaded);
 }
 
+// option: {
+//   year:
+//   month:
+//   day:
+//   trainCode:
+// }
+function singleTrain(opt, doneCb, errorCb) {
+  var url = "http://twtraffic.tra.gov.tw/twrail/SearchResultContent.aspx?searchdate=" +
+        Utils.getPaddedNumber(opt.year, 4) + "/" +
+        Utils.getPaddedNumber(opt.month, 2) + "/" +
+        Utils.getPaddedNumber(opt.day, 2) +
+        "&traincode=" + opt.trainCode +
+        "&trainclass=&mainviaroad=&fromstation=&tostation=&language=";
+
+  singleTrainWithUrl(url, doneCb, errorCb);
+}
 
 function startDaemon(hostUrl) {
   dump("Connect to: " + hostUrl);
+
+  function successAndSendBack(eventName, res) {
+    socket.emit(eventName, {
+      id: data.id,
+      result: res
+    });
+  }
+
+  function errorCallback(err) {}
+
   var socket = io.connect(hostUrl);
   socket.on('get-city-list', function (data) {
     dump("Remote ask to get city list\n");
-    cityList(function(res) {
-      socket.emit('got-city-list', {
-        id: data.id,
-        result: res
-      });
-    }, function(err) {
-      
-    });
+    cityList(successAndSendBack.bind(null, 'got-city-list'), errorCallback);
   });
 
   socket.on('get-train-of-station', function (data) {
@@ -171,14 +190,17 @@ function startDaemon(hostUrl) {
       day: data.day,
       direction: data.direction,
       stationCode: data.stationCode
-    }, function(res) {
-      socket.emit('got-train-of-station', {
-        id: data.id,
-        result: res
-      });
-    }, function(err) {
-      
-    });
+    }, successAndSendBack.bind(null, 'got-train-of-station'), errorCallback);
+  });
+
+  socket.on('get-train', function (data) {
+    dump("Remote asks to get a train\n");
+    singleTrain({
+      year: data.year,
+      month: data.month,
+      day: data.day,
+      trainCode: data.trainCode
+    }, successAndSendBack.bind(null, 'got-train'), errorCallback);
   });
 }
 
@@ -214,7 +236,12 @@ window.addEventListener('load', function(e) {
     break;
   case "singletrain":
   case "st":
-    singleTrain(cmds[0], doneCallback, errorCallback);
+    singleTrain({
+      year:      Utils.getNumber(cmds[0]),
+      month:     Utils.getNumber(cmds[1]),
+      day:       Utils.getNumber(cmds[2]),
+      trainCode: Utils.getNumber(cmds[3])
+    }, doneCallback, errorCallback);
     break;
   case "daemon":
     startDaemon(cmds[0]);
