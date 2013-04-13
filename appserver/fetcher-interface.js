@@ -6,6 +6,12 @@ var app = require('express')(),
 
 var requestQueue = {}, lastRequestId = 0, running = false;
 
+function getTaipeiTime() {
+  var now = new Date();
+  var offset = now.getTimezoneOffset();
+  return new Date(now + (offset + 480) * 60000);
+}
+
 exports.connect = function (doneCb, errCb) {
 
   server.listen(45123, '127.0.0.1');
@@ -92,7 +98,7 @@ exports.getTodayTrainOfStation = function getTodayTrainOfStation(stationCode, di
     return;
   }
 
-  var date = new Date();
+  var date = getTaipeiTime();
   pushToRequestQueue('get-train-of-station',
                      {
                        year: date.getFullYear(),
@@ -110,7 +116,7 @@ exports.getTodayTrain = function getTodayTrain(trainCode, doneCb, errCb) {
     return;
   }
 
-  var date = new Date();
+  var date = getTaipeiTime();
   pushToRequestQueue('get-train',
                      {
                        year: date.getFullYear(),
