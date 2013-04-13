@@ -23,7 +23,16 @@ var Utils = {
 
   getNumber: function(num) {
     if (typeof num == 'number') return num;
-    return parseInt(num.replace(/^0+/, ""));
+    return parseInt(num.replace(/^0+/, "")) || 0;
+  },
+
+  parseHourMinute: function(str) {
+    var match = /([0-9]{1,2}):([0-9]{1,2})/.exec(str);
+    if (!match) return null;
+    return {
+      h: this.getNumber(match[1]),
+      m: this.getNumber(match[2])
+    };
   }
 };
 
@@ -59,8 +68,8 @@ function trainOfStationWithUri(uri, doneCb, errorCb) {
             "queryUri": fields.item(1).querySelector("a").href
           },
           "terminal":  fields.item(3).textContent.trim(),
-          "arrive": fields.item(4).textContent.trim(),
-          "leave": fields.item(5).textContent.trim()
+          "arrive": Utils.parseHourMinute(fields.item(4).textContent.trim()),
+          "leave": Utils.parseHourMinute(fields.item(5).textContent.trim())
         });
       } catch (e) {
         dump("Error when parsing element: " + e + "\n");
@@ -137,8 +146,8 @@ function singleTrainWithUrl(uri, doneCb, errorCb) {
       var cells = row.children;
       result.push({
         "station": cells.item(1).textContent.trim(),
-        "arrive": cells.item(2).textContent.trim(),
-        "leave": cells.item(3).textContent.trim()
+        "arrive": Utils.parseHourMinute(cells.item(2).textContent.trim()),
+        "leave": Utils.parseHourMinute(cells.item(3).textContent.trim())
       });
     }
     doneCb(result);
