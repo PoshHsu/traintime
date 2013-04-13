@@ -2,6 +2,7 @@ var app = require('express')(),
     server = require('http').createServer(app),
     io = require('socket.io').listen(server),
     child_process = require('child_process'),
+    cacheHelper = require('./cache-helper.js'),
     connection = null;
 
 var requestQueue = {}, lastRequestId = 0, running = false;
@@ -85,12 +86,28 @@ function maybeRunNext() {
   });
 }
 
+function doneCallbackWrapper(cacheKey, option, doneCb) {
+  return function (result) {
+    cacheHelper.addEntry(cacheKey, result, option);
+    doneCb(result);
+  };
+}
+
 exports.getCityList = function getCityList(doneCb, errCb) {
   if (!connection) {
     return;
   }
 
-  pushToRequestQueue('get-city-list', {}, doneCb, errCb);
+  var cached = cacheHelper.getEntry('citylist-key');
+  if (cached) {
+    setTimeout(doneCb, 0, cached);
+    return;
+  }
+
+  pushToRequestQueue('get-city-list',
+                     {},
+                     doneCallbackWrapper('citylist-key', { live: 3600000 }, doneCb),
+                     errCb);
 };
 
 exports.getTodayTrainOfStation = function getTodayTrainOfStation(stationCode, direction, doneCb, errCb) {
