@@ -116,6 +116,15 @@ exports.getTodayTrainOfStation = function getTodayTrainOfStation(stationCode, di
   }
 
   var date = getTaipeiTime();
+  var key = "#getTodayTrainOfStation-" + date.getFullYear() + "-" +
+        date.getMonth() + "-" + date.getDate() + "-" + stationCode +
+        "-" + direction;
+  var cached = cacheHelper.getEntry(key);
+  if (cached) {
+    setTimeout(doneCb, 0, cached);
+    return;
+  }
+
   pushToRequestQueue('get-train-of-station',
                      {
                        year: date.getFullYear(),
@@ -124,7 +133,7 @@ exports.getTodayTrainOfStation = function getTodayTrainOfStation(stationCode, di
                        stationCode: stationCode,
                        direction: direction
                      },
-                     doneCb,
+                     doneCallbackWrapper(key, { live: 3600000 }, doneCb),
                      errCb);
 };
 
