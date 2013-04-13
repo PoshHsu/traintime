@@ -6,11 +6,11 @@ fetcher.connect();
 web.start([
   {
     "method": "get",
-    "path": "/trainAt/:stationId/:direction",
+    "path": /\/trainAt\/([0-9]{4})\/([01])$/,
     "handler": function(req, resp) {
       fetcher.getTodayTrainOfStation(
-        parseInt(req.params.stationId),
-        parseInt(req.params.direction),
+        parseInt(req.params[0]),
+        parseInt(req.params[1]),
         function(result) {
           resp.setHeader("content-type", "text/json; charset=utf-8");
           resp.end(JSON.stringify(result));
@@ -20,10 +20,10 @@ web.start([
   },
   {
     "method": "get",
-    "path": "/train/:trainId",
+    "path": /\/train\/([0-9]{2,4})$/,
     "handler": function(req, resp) {
       fetcher.getTodayTrain(
-        parseInt(req.params.trainId),
+        parseInt(req.params[0]),
         function(result) {
           resp.setHeader("content-type", "text/json; charset=utf-8");
           resp.end(JSON.stringify(result));
@@ -33,7 +33,7 @@ web.start([
   },
   {
     "method": "get",
-    "path": "/stations",
+    "path": "/stations$",
     "handler": function(req, resp) {
       fetcher.getCityList(
         function(result) {
