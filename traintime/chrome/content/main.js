@@ -112,6 +112,10 @@ function cityList(doneCb, errorCb) {
       if (val < 0) continue;
 
       // Set FromCity to the city
+      var group = {
+        name: opt.textContent.trim()
+      };
+      var stations = group.stations = [];
       citySelector.value = opt.value;
       citySelector.onchange();
 
@@ -119,11 +123,13 @@ function cityList(doneCb, errorCb) {
       var stationOptions = doc.querySelectorAll("select#FromStation > option");
       for (var j = 0; j < stationOptions.length; j++) {
         var stationOpt = stationOptions.item(j);
-        result.push({
+        stations.push({
           station: stationOpt.textContent.trim(),
           code: stationOpt.value
         });
       }
+
+      result.push(group);
     }
     doneCb(result);
   }
