@@ -16,9 +16,6 @@
         <ul data-role="listview" id="group-list">
         </ul>
       </div>
-      <div data-role="footer">
-        I am footer.
-      </div>
     </div>
     <div data-role="page" id="page_station_list" data-add-back-btn="true" data-back-btn-text="Previous"
          data-back-btn-theme="e">
@@ -29,9 +26,19 @@
          <ul data-role="listview" id="city-list">
          </ul>
       </div>
-      <div data-role="footer">
-        I am footer.
+    </div>
+    <div data-role="page" id="page_direction" data-add-back-btn="true" data-back-btn-text="Back"
+         data-back-btn-theme="e">
+      <div data-role="header">
+        <h1>Direction</h1>
       </div>
+      <div data-role="content">
+        <ul data-role="listview" id="direction-selector">
+          <li><a href="#page_station" id="cw" data-transition="slide">Clockwise</a></li>
+          <li><a href="#page_station" id="ccw" data-transition="slide">Counter-clock wise</a></li>
+        </ul>
+      </div>
+    </div>
     </div>
     <div data-role="page" id="page_station" data-add-back-btn="true" data-back-btn-text="Previous"
          data-back-btn-theme="e">
@@ -42,8 +49,15 @@
          <ul data-role="listview" id="train-list">
          </ul>
       </div>
-      <div data-role="footer">
-        I am footer.
+    </div>
+    <div data-role="page" id="page_train" data-add-back-btn="true" data-back-btn-text="Previous"
+         data-back-btn-theme="e">
+      <div data-role="header" id="header">
+        <h1></h1>
+      </div>
+      <div data-role="content">
+         <ul data-role="listview" id="train-station-list">
+         </ul>
       </div>
     </div>
   </body>
